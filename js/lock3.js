@@ -9,7 +9,7 @@
  * =============================================================
  */
 
-import { FLAPPY_PIPE_GAP, FLAPPY_PIPE_SPEED, FLAPPY_GRAVITY, FLAPPY_FLAP, PIN_L3 } from './config.js';
+import { FLAPPY_PIPE_GAP, FLAPPY_PIPE_SPEED, FLAPPY_GRAVITY, FLAPPY_FLAP, PIN_L3, FLAPPY_THRESHOLD_OFFSET, FLAPPY_THRESHOLD_MAX } from './config.js';
 import { State }                    from './state.js';
 import { saveProgress }             from './api.js';
 import { showMsg, showScreen }      from './utils.js';
@@ -21,7 +21,7 @@ import { getPinValue, initPinInputs, clearPinInputs } from './pin-input.js';
 let flappyRunning  = false;
 let flappyAnimId   = null;
 let flappyScore    = 0;
-let flappyThreshold = 0.15;
+let flappyThreshold = 0.20;
 let flappyMicOk    = false;
 let flappyFallback = false;
 
@@ -112,7 +112,7 @@ export async function startFlappyCalibrate() {
     document.getElementById('btn-l3-calibrate').disabled    = false;
     document.getElementById('btn-l3-start').disabled        = false;
     document.getElementById('l3-threshold-txt').textContent = 'Mode fallback (tanpa mic).';
-    flappyThreshold = 0.15;
+    flappyThreshold = 0.20;
     _startVolMeter();
     return;
   }
@@ -128,7 +128,7 @@ export async function startFlappyCalibrate() {
     if (Date.now() - start >= 2000) {
       clearInterval(cal);
       const avg   = samples.reduce((a, b) => a + b, 0) / samples.length;
-      flappyThreshold = Math.min(avg + 0.12, 0.35);
+      flappyThreshold = Math.min(avg + FLAPPY_THRESHOLD_OFFSET, FLAPPY_THRESHOLD_MAX);
       document.getElementById('l3-threshold-txt').textContent = `Threshold: ${flappyThreshold.toFixed(3)} (suara dasar ${avg.toFixed(3)})`;
       document.getElementById('l3-mic-status').textContent    = 'Kalibrasi selesai. Siap bermain!';
       document.getElementById('btn-l3-calibrate').disabled    = false;

@@ -11,6 +11,7 @@ import { State }                       from './state.js';
 import { showMsg, showScreen }         from './utils.js';
 import { initMic, stopMic, getMicRMS } from './mic.js';
 import { unlockLock, renderBox }       from './box.js';
+import { SILENCE_THRESHOLD_OFFSET }    from './config.js';
 
 // ── State privat ──────────────────────────────────────────────
 let l4Baseline      = 0;
@@ -73,7 +74,7 @@ export async function startBaseline() {
     if (Date.now() - start >= 2000) {
       clearInterval(cal);
       l4Baseline  = samples.reduce((a, b) => a + b, 0) / samples.length;
-      l4Threshold = l4Baseline + 0.05;
+      l4Threshold = l4Baseline + SILENCE_THRESHOLD_OFFSET;
 
       document.getElementById('l4-baseline-status').textContent = `Suara dasar: ${l4Baseline.toFixed(3)}, batas: ${l4Threshold.toFixed(3)}`;
       document.getElementById('l4-threshold-txt').textContent   = 'Garis putih = batas kebisingan';

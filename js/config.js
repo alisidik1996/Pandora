@@ -18,6 +18,18 @@ export const MOTION_THRESHOLD = 2.5; // perubahan vektor akselerasi antar sampel
 export const MOTION_COUNT_LIMIT = 3;  // jumlah deteksi besar dalam 1 detik → dianggap bergerak
 
 // -------------------------------------------------------------
+// MIKROFON — LOCK 3 & LOCK 4
+// -------------------------------------------------------------
+// Lock 4 (Sunyi): threshold = baseline + offset ini
+// Lebih besar = lebih toleran noise, lebih mudah pass
+export const SILENCE_THRESHOLD_OFFSET = 0.10; // default 0.05 terlalu ketat
+
+// Lock 3 (Flappy): threshold = baseline + offset ini
+// Lebih besar = perlu suara lebih keras untuk flap, kurang sensitive
+export const FLAPPY_THRESHOLD_OFFSET = 0.18; // default 0.12 terlalu sensitive
+export const FLAPPY_THRESHOLD_MAX = 0.40;    // default 0.35
+
+// -------------------------------------------------------------
 // PIN GEMBOK (plaintext)
 // Catatan: validasi client-side tidak 100% anti-cheat.
 // Panic Hold + tugas fisik + pantauan fasilitator adalah lapisan utamanya.
