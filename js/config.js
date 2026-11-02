@@ -9,7 +9,7 @@
 // -------------------------------------------------------------
 // PANIC HOLD (anti-cheat)
 // -------------------------------------------------------------
-export const PANIC_ENABLED = True; // false = matikan panic hold
+export const PANIC_ENABLED = true; // false = matikan panic hold
 
 // -------------------------------------------------------------
 // SENSOR GERAK — SETEL AMBANG INI SAAT TES HP BESOK
