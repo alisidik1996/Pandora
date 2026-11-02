@@ -21,8 +21,9 @@ let _panicTimeout   = null;
 let _panicCountdown = null;
 let _lastGlobalPanicCount = 0;
 let _pollInterval = null;
-let _panicActive = false; // Flag untuk cegah overlap
-let _sessionStartCount = 0; // Count saat session dimulai
+let _visibilityHandler = null;
+let _blurHandler = null;
+let _focusHandler = null;
 
 function _isGameActive() {
   return !!State.teamData?.id && !State.teamData?.finished;
@@ -109,6 +110,9 @@ export function startPanicPolling() {
   });
 
   _pollInterval = setInterval(_checkGlobalPanic, POLL_INTERVAL);
+
+  // Attach event listeners
+  _attachEventListeners();
 }
 
 export function stopPanicPolling() {
@@ -116,24 +120,54 @@ export function stopPanicPolling() {
     clearInterval(_pollInterval);
     _pollInterval = null;
   }
+
+  // Remove event listeners
+  _removeEventListeners();
 }
 
 // ── Event listeners ───────────────────────────────────────────
 
-document.addEventListener('visibilitychange', () => {
-  if (!_isGameActive() || !PANIC_ENABLED) return;
-  if (document.hidden) {
-    _panicTimeout = setTimeout(_triggerPanic, PANIC_DELAY);
-  } else {
+function _attachEventListeners() {
+  if (_visibilityHandler) return; // Already attached
+
+  _visibilityHandler = () => {
+    if (!_isGameActive() || !PANIC_ENABLED) return;
+    if (document.hidden) {
+      _panicTimeout = setTimeout(_triggerPanic, PANIC_DELAY);
+    } else {
+      if (_panicTimeout) { clearTimeout(_panicTimeout); _panicTimeout = null; }
+    }
+  };
+
+  _blurHandler = () => {
+    if (!_isGameActive() || !PANIC_ENABLED) return;
+    if (!_panicTimeout) _panicTimeout = setTimeout(_triggerPanic, PANIC_DELAY);
+  };
+
+  _focusHandler = () => {
     if (_panicTimeout) { clearTimeout(_panicTimeout); _panicTimeout = null; }
+  };
+
+  document.addEventListener('visibilitychange', _visibilityHandler);
+  window.addEventListener('blur', _blurHandler);
+  window.addEventListener('focus', _focusHandler);
+
+  console.log('[Panic] Event listeners attached');
+}
+
+function _removeEventListeners() {
+  if (_visibilityHandler) {
+    document.removeEventListener('visibilitychange', _visibilityHandler);
+    _visibilityHandler = null;
   }
-});
+  if (_blurHandler) {
+    window.removeEventListener('blur', _blurHandler);
+    _blurHandler = null;
+  }
+  if (_focusHandler) {
+    window.removeEventListener('focus', _focusHandler);
+    _focusHandler = null;
+  }
 
-window.addEventListener('blur', () => {
-  if (!_isGameActive() || !PANIC_ENABLED) return;
-  if (!_panicTimeout) _panicTimeout = setTimeout(_triggerPanic, PANIC_DELAY);
-});
-
-window.addEventListener('focus', () => {
-  if (_panicTimeout) { clearTimeout(_panicTimeout); _panicTimeout = null; }
-});
+  console.log('[Panic] Event listeners removed');
+}
