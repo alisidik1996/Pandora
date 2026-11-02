@@ -34,6 +34,9 @@ async function _get(endpoint) {
   const res = await fetch(`${BASE}${endpoint}`, {
     headers: { ..._authHeader() },
   });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
   return res.json();
 }
 
@@ -88,6 +91,12 @@ export async function saveProgress(teamData) {
  * @returns {Array<{ name, duration, panicCount }>}
  */
 export async function fetchLeaderboard() {
-  try { return await _get('/api/leaderboard'); }
-  catch { return []; }
+  try {
+    const data = await _get('/api/leaderboard');
+    return Array.isArray(data) ? data : [];
+  }
+  catch (e) {
+    console.error('fetchLeaderboard error:', e);
+    return [];
+  }
 }

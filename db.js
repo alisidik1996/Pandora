@@ -12,39 +12,57 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'node:crypto';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
 const sql = neon(process.env.DATABASE_URL);
 
 // ── Schema Init ───────────────────────────────────────────────
+let schemaInitialized = false;
+
 async function initSchema() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS teams (
-      id            SERIAL PRIMARY KEY,
-      name          TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      start_time    BIGINT NOT NULL,
-      locks         JSONB NOT NULL DEFAULT '{"l1":false,"l2":false,"l3":false,"l4":false,"l5":false,"l6":false}',
-      lock_order    JSONB NOT NULL DEFAULT '[]',
-      panic_count   INTEGER NOT NULL DEFAULT 0,
-      flappy_digits JSONB,
-      finished      BOOLEAN NOT NULL DEFAULT false,
-      duration      BIGINT NOT NULL DEFAULT 0,
-      created_at    BIGINT NOT NULL
-    )
-  `;
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS teams (
+        id            SERIAL PRIMARY KEY,
+        name          TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        start_time    BIGINT NOT NULL,
+        locks         JSONB NOT NULL DEFAULT '{"l1":false,"l2":false,"l3":false,"l4":false,"l5":false,"l6":false}',
+        lock_order    JSONB NOT NULL DEFAULT '[]',
+        panic_count   INTEGER NOT NULL DEFAULT 0,
+        flappy_digits JSONB,
+        finished      BOOLEAN NOT NULL DEFAULT false,
+        duration      BIGINT NOT NULL DEFAULT 0,
+        created_at    BIGINT NOT NULL
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS sessions (
-      token      TEXT PRIMARY KEY,
-      team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      created_at BIGINT NOT NULL
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token      TEXT PRIMARY KEY,
+        team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        created_at BIGINT NOT NULL
+      )
+    `;
 
-  await sql`CREATE INDEX IF NOT EXISTS idx_sessions_team ON sessions(team_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sessions_team ON sessions(team_id)`;
+
+    schemaInitialized = true;
+    console.log('[DB] Schema initialized');
+  } catch (err) {
+    console.error('[DB] Schema init error:', err.message);
+  }
 }
 
-// Run schema init (safe to call multiple times)
-initSchema().catch(err => console.error('Schema init error:', err));
+async function ensureSchema() {
+  if (schemaInitialized) return;
+  await initSchema();
+}
+
+// Init on startup (non-blocking)
+initSchema();
 
 // ── Helpers ───────────────────────────────────────────────────
 const SALT = 'pandora-box-2026-salt-v1'; // ponytail: per-user salt better, add when scale
@@ -79,6 +97,7 @@ function _row(team) {
  * @returns {{ success, team, token } | { success, error }}
  */
 export async function login(name, password) {
+  await ensureSchema();
   const rows = await sql`SELECT * FROM teams WHERE LOWER(name) = LOWER(${name.trim()})`;
 
   if (rows.length === 0) {
@@ -101,6 +120,7 @@ export async function login(name, password) {
  * @returns {{ success, team, token } | { success, error }}
  */
 export async function register(name, password) {
+  await ensureSchema();
   const rows = await sql`SELECT id FROM teams WHERE LOWER(name) = LOWER(${name.trim()})`;
 
   if (rows.length > 0) {
@@ -125,6 +145,7 @@ export async function register(name, password) {
  * Validasi token sesi → kembalikan teamId atau null.
  */
 export async function validateSession(token) {
+  await ensureSchema();
   const rows = await sql`SELECT team_id FROM sessions WHERE token = ${token}`;
   return rows.length > 0 ? rows[0].team_id : null;
 }
@@ -133,6 +154,7 @@ export async function validateSession(token) {
  * Simpan progress tim ke database.
  */
 export async function saveProgress(teamId, data) {
+  await ensureSchema();
   await sql`
     UPDATE teams SET
       locks = ${JSON.stringify(data.locks)},
@@ -150,6 +172,7 @@ export async function saveProgress(teamId, data) {
  * Ambil progress tim berdasarkan teamId.
  */
 export async function getProgress(teamId) {
+  await ensureSchema();
   const rows = await sql`SELECT * FROM teams WHERE id = ${teamId}`;
   return rows.length > 0 ? _row(rows[0]) : null;
 }
@@ -158,6 +181,7 @@ export async function getProgress(teamId) {
  * Leaderboard: tim yang sudah selesai, diurutkan dari durasi tercepat.
  */
 export async function getLeaderboard() {
+  await ensureSchema();
   const rows = await sql`
     SELECT name, duration, panic_count
     FROM teams
