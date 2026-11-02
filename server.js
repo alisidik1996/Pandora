@@ -145,7 +145,7 @@ async function handleAPI(req, res) {
     }
     const { name, password } = await readBody(req);
     if (!name || !password) return json(res, 400, { error: 'Nama dan password wajib diisi.' });
-    const result = login(name, password);
+    const result = await login(name, password);
     return json(res, result.success ? 200 : 401, result);
   }
 
@@ -153,31 +153,31 @@ async function handleAPI(req, res) {
   if (url.pathname === '/api/register' && method === 'POST') {
     const { name, password } = await readBody(req);
     if (!name || !password) return json(res, 400, { error: 'Nama dan password wajib diisi.' });
-    const result = register(name, password);
+    const result = await register(name, password);
     return json(res, result.success ? 200 : 400, result);
   }
 
   // POST /api/save — simpan progress (perlu token)
   if (url.pathname === '/api/save' && method === 'POST') {
     const token  = getToken(req);
-    const teamId = token ? validateSession(token) : null;
+    const teamId = token ? await validateSession(token) : null;
     if (!teamId) return json(res, 401, { error: 'Sesi tidak valid, silakan login ulang.' });
     const body = await readBody(req);
-    const result = saveProgress(teamId, body);
+    const result = await saveProgress(teamId, body);
     return json(res, 200, result);
   }
 
   // GET /api/leaderboard — publik
   if (url.pathname === '/api/leaderboard' && method === 'GET') {
-    return json(res, 200, getLeaderboard());
+    return json(res, 200, await getLeaderboard());
   }
 
   // GET /api/progress — ambil progress tim (perlu token)
   if (url.pathname === '/api/progress' && method === 'GET') {
     const token  = getToken(req);
-    const teamId = token ? validateSession(token) : null;
+    const teamId = token ? await validateSession(token) : null;
     if (!teamId) return json(res, 401, { error: 'Sesi tidak valid, silakan login ulang.' });
-    const team = getProgress(teamId);
+    const team = await getProgress(teamId);
     if (!team) return json(res, 404, { error: 'Tim tidak ditemukan.' });
     return json(res, 200, { team });
   }

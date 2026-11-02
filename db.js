@@ -1,8 +1,7 @@
 /**
  * =============================================================
  *  MODULE: Database (server-side)
- *  Engine : node:sqlite (built-in, Node >= 22.5)
- *  File   : data/pandora.db  (auto-dibuat saat pertama kali)
+ *  Engine : Neon PostgreSQL (serverless)
  *
  *  Tabel:
  *    teams    — data tim, progress, status selesai
@@ -10,45 +9,42 @@
  * =============================================================
  */
 
-import { DatabaseSync } from 'node:sqlite';
-import crypto           from 'node:crypto';
-import fs               from 'node:fs';
-import path             from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { neon } from '@neondatabase/serverless';
+import crypto from 'node:crypto';
 
-// ── Path database ─────────────────────────────────────────────
-const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'data');
-if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
-const DB_PATH = path.join(DIR, 'pandora.db');
+const sql = neon(process.env.DATABASE_URL);
 
-const db = new DatabaseSync(DB_PATH);
+// ── Schema Init ───────────────────────────────────────────────
+async function initSchema() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS teams (
+      id            SERIAL PRIMARY KEY,
+      name          TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      start_time    BIGINT NOT NULL,
+      locks         JSONB NOT NULL DEFAULT '{"l1":false,"l2":false,"l3":false,"l4":false,"l5":false,"l6":false}',
+      lock_order    JSONB NOT NULL DEFAULT '[]',
+      panic_count   INTEGER NOT NULL DEFAULT 0,
+      flappy_digits JSONB,
+      finished      BOOLEAN NOT NULL DEFAULT false,
+      duration      BIGINT NOT NULL DEFAULT 0,
+      created_at    BIGINT NOT NULL
+    )
+  `;
 
-// ── Schema ────────────────────────────────────────────────────
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
+  await sql`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token      TEXT PRIMARY KEY,
+      team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      created_at BIGINT NOT NULL
+    )
+  `;
 
-  CREATE TABLE IF NOT EXISTS teams (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    name          TEXT    NOT NULL UNIQUE,
-    password_hash TEXT    NOT NULL,
-    start_time    INTEGER NOT NULL,
-    locks         TEXT    NOT NULL DEFAULT '{"l1":false,"l2":false,"l3":false,"l4":false,"l5":false,"l6":false}',
-    lock_order    TEXT    NOT NULL DEFAULT '[]',
-    panic_count   INTEGER NOT NULL DEFAULT 0,
-    flappy_digits TEXT,
-    finished      INTEGER NOT NULL DEFAULT 0,
-    duration      INTEGER NOT NULL DEFAULT 0,
-    created_at    INTEGER NOT NULL
-  );
+  await sql`CREATE INDEX IF NOT EXISTS idx_sessions_team ON sessions(team_id)`;
+}
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    token      TEXT    PRIMARY KEY,
-    team_id    INTEGER NOT NULL,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
-  );
-`);
+// Run schema init (safe to call multiple times)
+initSchema().catch(err => console.error('Schema init error:', err));
 
 // ── Helpers ───────────────────────────────────────────────────
 const SALT = 'pandora-box-2026-salt-v1'; // ponytail: per-user salt better, add when scale
@@ -63,28 +59,17 @@ function timingSafeCompare(a, b) {
 }
 
 function _row(team) {
-  const parseSafe = (str, fallback) => { try { return JSON.parse(str); } catch { return fallback; } };
   return {
     id:           team.id,
     name:         team.name,
-    startTime:    team.start_time,
-    locks:        parseSafe(team.locks, {l1:false,l2:false,l3:false,l4:false,l5:false,l6:false}),
-    lockOrder:    parseSafe(team.lock_order, []),
+    startTime:    Number(team.start_time),
+    locks:        team.locks,
+    lockOrder:    team.lock_order,
     panicCount:   team.panic_count,
-    flappyDigits: team.flappy_digits ? parseSafe(team.flappy_digits, null) : null,
-    finished:     team.finished === 1,
-    duration:     team.duration,
+    flappyDigits: team.flappy_digits,
+    finished:     team.finished,
+    duration:     Number(team.duration),
   };
-}
-
-function _byId(id) {
-  return db.prepare('SELECT * FROM teams WHERE id = ?').get(id);
-}
-
-function _newSession(teamId) {
-  const token = makeToken();
-  db.prepare('INSERT INTO sessions (token, team_id, created_at) VALUES (?, ?, ?)').run(token, teamId, Date.now());
-  return token;
 }
 
 // ── Public API ────────────────────────────────────────────────
@@ -93,18 +78,21 @@ function _newSession(teamId) {
  * Login - tim harus sudah ada.
  * @returns {{ success, team, token } | { success, error }}
  */
-export function login(name, password) {
-  const existing = db.prepare('SELECT * FROM teams WHERE LOWER(name) = LOWER(?)').get(name.trim());
+export async function login(name, password) {
+  const rows = await sql`SELECT * FROM teams WHERE LOWER(name) = LOWER(${name.trim()})`;
 
-  if (!existing) {
+  if (rows.length === 0) {
     return { success: false, error: 'Tim tidak ditemukan.' };
   }
 
+  const existing = rows[0];
   if (!timingSafeCompare(existing.password_hash, hashPwd(password))) {
     return { success: false, error: 'Password salah.' };
   }
 
-  const token = _newSession(existing.id);
+  const token = makeToken();
+  await sql`INSERT INTO sessions (token, team_id, created_at) VALUES (${token}, ${existing.id}, ${Date.now()})`;
+
   return { success: true, team: _row(existing), token };
 }
 
@@ -112,78 +100,74 @@ export function login(name, password) {
  * Register - tim belum boleh ada.
  * @returns {{ success, team, token } | { success, error }}
  */
-export function register(name, password) {
-  const existing = db.prepare('SELECT * FROM teams WHERE LOWER(name) = LOWER(?)').get(name.trim());
+export async function register(name, password) {
+  const rows = await sql`SELECT id FROM teams WHERE LOWER(name) = LOWER(${name.trim()})`;
 
-  if (existing) {
+  if (rows.length > 0) {
     return { success: false, error: 'Nama tim sudah dipakai.' };
   }
 
-  const now  = Date.now();
-  const stmt = db.prepare(`
+  const now = Date.now();
+  const result = await sql`
     INSERT INTO teams (name, password_hash, start_time, created_at)
-    VALUES (?, ?, ?, ?)
-  `);
-  const res   = stmt.run(name.trim(), hashPwd(password), now, now);
-  const team  = _byId(res.lastInsertRowid);
-  const token = _newSession(team.id);
+    VALUES (${name.trim()}, ${hashPwd(password)}, ${now}, ${now})
+    RETURNING *
+  `;
+
+  const team = result[0];
+  const token = makeToken();
+  await sql`INSERT INTO sessions (token, team_id, created_at) VALUES (${token}, ${team.id}, ${now})`;
+
   return { success: true, team: _row(team), token };
 }
 
 /**
  * Validasi token sesi → kembalikan teamId atau null.
  */
-export function validateSession(token) {
-  const row = db.prepare('SELECT team_id FROM sessions WHERE token = ?').get(token);
-  return row ? row.team_id : null;
+export async function validateSession(token) {
+  const rows = await sql`SELECT team_id FROM sessions WHERE token = ${token}`;
+  return rows.length > 0 ? rows[0].team_id : null;
 }
 
 /**
  * Simpan progress tim ke database.
  */
-export function saveProgress(teamId, data) {
-  db.prepare(`
+export async function saveProgress(teamId, data) {
+  await sql`
     UPDATE teams SET
-      locks         = ?,
-      lock_order    = ?,
-      panic_count   = ?,
-      flappy_digits = ?,
-      finished      = ?,
-      duration      = ?
-    WHERE id = ?
-  `).run(
-    JSON.stringify(data.locks),
-    JSON.stringify(data.lockOrder),
-    data.panicCount   ?? 0,
-    data.flappyDigits ? JSON.stringify(data.flappyDigits) : null,
-    data.finished     ? 1 : 0,
-    data.duration     ?? 0,
-    teamId,
-  );
+      locks = ${JSON.stringify(data.locks)},
+      lock_order = ${JSON.stringify(data.lockOrder)},
+      panic_count = ${data.panicCount ?? 0},
+      flappy_digits = ${data.flappyDigits ? JSON.stringify(data.flappyDigits) : null},
+      finished = ${data.finished ?? false},
+      duration = ${data.duration ?? 0}
+    WHERE id = ${teamId}
+  `;
   return { success: true };
 }
 
 /**
  * Ambil progress tim berdasarkan teamId.
  */
-export function getProgress(teamId) {
-  const row = _byId(teamId);
-  return row ? _row(row) : null;
+export async function getProgress(teamId) {
+  const rows = await sql`SELECT * FROM teams WHERE id = ${teamId}`;
+  return rows.length > 0 ? _row(rows[0]) : null;
 }
 
 /**
  * Leaderboard: tim yang sudah selesai, diurutkan dari durasi tercepat.
  */
-export function getLeaderboard() {
-  return db.prepare(`
+export async function getLeaderboard() {
+  const rows = await sql`
     SELECT name, duration, panic_count
     FROM teams
-    WHERE finished = 1
+    WHERE finished = true
     ORDER BY duration ASC
     LIMIT 50
-  `).all().map(r => ({
+  `;
+  return rows.map(r => ({
     name:       r.name,
-    duration:   r.duration,
+    duration:   Number(r.duration),
     panicCount: r.panic_count,
   }));
 }
