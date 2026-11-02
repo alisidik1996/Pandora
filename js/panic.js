@@ -27,6 +27,10 @@ function _triggerPanic() {
   if (!_isGameActive() || !PANIC_ENABLED) return;
 
   State.teamData.panicCount = (State.teamData.panicCount || 0) + 1;
+
+  // Update last global count agar tidak re-trigger dari polling sendiri
+  _lastGlobalPanicCount++;
+
   saveProgress(State.teamData); // fire-and-forget
 
   const modal    = document.getElementById('panic-modal');
@@ -59,9 +63,11 @@ async function _checkGlobalPanic() {
   if (!_isGameActive() || !PANIC_ENABLED) return;
 
   const count = await fetchGlobalPanicCount();
+  console.log('[Panic] Global count:', count, '| Last:', _lastGlobalPanicCount);
 
   // Jika global count naik, trigger panic di tim ini
   if (count > _lastGlobalPanicCount) {
+    console.log('[Panic] Global panic detected! Triggering...');
     _lastGlobalPanicCount = count;
     _triggerPanic();
   }
@@ -71,9 +77,12 @@ async function _checkGlobalPanic() {
 export function startPanicPolling() {
   if (_pollInterval) return;
 
+  console.log('[Panic] Starting global panic polling...');
+
   // Init last count
   fetchGlobalPanicCount().then(count => {
     _lastGlobalPanicCount = count;
+    console.log('[Panic] Initial global count:', count);
   });
 
   _pollInterval = setInterval(_checkGlobalPanic, POLL_INTERVAL);
