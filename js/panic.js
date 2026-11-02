@@ -32,6 +32,8 @@ function _triggerPanic() {
   if (!_isGameActive() || !PANIC_ENABLED) return;
   if (_panicActive) return; // Skip jika panic sudah aktif
 
+  console.log('[Panic] Trigger panic! Incrementing count...');
+
   _panicActive = true;
   State.teamData.panicCount = (State.teamData.panicCount || 0) + 1;
   saveProgress(State.teamData); // fire-and-forget
