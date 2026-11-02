@@ -27,10 +27,6 @@ function _triggerPanic() {
   if (!_isGameActive() || !PANIC_ENABLED) return;
 
   State.teamData.panicCount = (State.teamData.panicCount || 0) + 1;
-
-  // Update last global count agar tidak re-trigger dari polling sendiri
-  _lastGlobalPanicCount++;
-
   saveProgress(State.teamData); // fire-and-forget
 
   const modal    = document.getElementById('panic-modal');
@@ -68,8 +64,15 @@ async function _checkGlobalPanic() {
   // Jika global count naik, trigger panic di tim ini
   if (count > _lastGlobalPanicCount) {
     console.log('[Panic] Global panic detected! Triggering...');
+    // Update SETELAH trigger agar tim ini juga kena panic
+    const oldLast = _lastGlobalPanicCount;
     _lastGlobalPanicCount = count;
-    _triggerPanic();
+
+    // Trigger untuk setiap kenaikan yang terlewat
+    const missed = count - oldLast;
+    for (let i = 0; i < missed; i++) {
+      _triggerPanic();
+    }
   }
 }
 
