@@ -24,6 +24,7 @@ let flappyScore    = 0;
 let flappyThreshold = 0.20;
 let flappyMicOk    = false;
 let flappyFallback = false;
+let smoothedRMS    = 0;
 
 let bird       = null;
 let pipes      = [];
@@ -68,14 +69,20 @@ export function initLock3Screen() {
 
   // Fallback: ketuk layar
   const canvas = document.getElementById('flappy-canvas');
-  canvas.ontouchstart = e => { e.preventDefault(); if (flappyFallback && flappyRunning) _flap(); };
+  canvas.ontouchstart = e => {
+    e.preventDefault();
+    if (flappyFallback && flappyRunning && bird) bird.y -= 40;
+  };
 
   // Fallback: Spasi
   document.addEventListener('keydown', _spaceHandler);
 }
 
 function _spaceHandler(e) {
-  if (e.code === 'Space' && flappyFallback && flappyRunning) { e.preventDefault(); _flap(); }
+  if (e.code === 'Space' && flappyFallback && flappyRunning && bird) {
+    e.preventDefault();
+    bird.y -= 40;
+  }
 }
 
 // ── Canvas setup ──────────────────────────────────────────────
@@ -161,21 +168,18 @@ export function startFlappyGame() {
   const canvas = document.getElementById('flappy-canvas');
   const W = canvas.width, H = canvas.height;
 
-  bird         = { x: W * 0.2, y: H / 2, vy: 0, r: 14 };
+  bird         = { x: W * 0.2, y: H / 2, r: 14 };
   pipes        = [];
   flappyScore  = 0;
   flappyFrame  = 0;
   pipeSpawned  = 0; // reset counter
+  smoothedRMS  = 0; // reset smoothing
   flappyRunning = true;
 
   document.getElementById('l3-score').textContent = 'Skor: 0 / 15';
 
   if (flappyAnimId) cancelAnimationFrame(flappyAnimId);
   _gameLoop();
-}
-
-function _flap() {
-  if (bird) bird.vy = FLAPPY_FLAP;
 }
 
 function _gameLoop() {
@@ -185,16 +189,26 @@ function _gameLoop() {
   const ctx    = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
 
-  // Kontrol suara
+  // Kontrol suara + Fisika (linear movement)
   if (flappyMicOk && !flappyFallback) {
     const rms = getMicRMS();
-    if (rms > flappyThreshold) _flap();
+    // Haluskan RMS biar nggak jitter
+    smoothedRMS = smoothedRMS * 0.6 + rms * 0.4;
+
+    if (smoothedRMS > flappyThreshold) {
+      bird.y -= 2.2; // suara kencang = naik pelan
+    } else {
+      bird.y += 2.0; // suara pelan/diam = turun pelan
+    }
+
     document.getElementById('l3-vol-fill').style.width = Math.min(rms * 400, 100) + '%';
+  } else {
+    // Fallback mode tetap pakai gravity
+    bird.y += 2.0;
   }
 
-  // Fisika
-  bird.vy += FLAPPY_GRAVITY;
-  bird.y  += bird.vy;
+  // Langit cuma mentok, jangan mati
+  if (bird.y - bird.r < 0) bird.y = bird.r;
 
   // Spawn pipa
   const PIPE_INTERVAL = Math.floor(180 / FLAPPY_PIPE_SPEED);
@@ -269,8 +283,8 @@ function _gameLoop() {
   ctx.closePath();
   ctx.fill();
 
-  // Deteksi tabrakan
-  let dead = bird.y - bird.r <= 0 || bird.y + bird.r >= H;
+  // Deteksi tabrakan - mati hanya kalau nabrak pipa atau lantai bawah
+  let dead = bird.y + bird.r >= H; // lantai bawah
   pipes.forEach(p => {
     if (bird.x + bird.r > p.x + 4 && bird.x - bird.r < p.x + 36) {
       if (bird.y - bird.r < p.topH || bird.y + bird.r > p.topH + FLAPPY_PIPE_GAP) dead = true;
