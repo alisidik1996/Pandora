@@ -50,6 +50,7 @@ function bindEvents() {
   // Menu Pandora
   document.getElementById('card-pandora')
     .addEventListener('click', () => {
+      console.log('[Init] Pandora card clicked, loading box...');
       import('./box.js').then(m => m.showBox());
     });
   document.getElementById('btn-menu-logout')
