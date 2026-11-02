@@ -18,8 +18,7 @@ let boxTimerInterval = null;
 // ── Layar Kotak ──────────────────────────────────────────────
 
 export function showBox() {
-  console.log('[Box] showBox called, starting panic polling...');
-  startPanicPolling(); // Start global panic monitoring
+  startPanicPolling();
   renderBox();
   showScreen('screen-box');
 }

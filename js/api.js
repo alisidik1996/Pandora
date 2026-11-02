@@ -82,7 +82,7 @@ export async function saveProgress(teamData) {
       duration:   teamData.duration,
     });
   } catch (e) {
-    console.warn('saveProgress gagal (offline?):', e.message);
+    // Offline/network error - silent fail
   }
 }
 
