@@ -61,7 +61,6 @@ export async function sha256hex(str) {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
   } catch (e) {
-    console.error('SHA-256 gagal:', e);
     throw new Error('Browser tidak support crypto.subtle');
   }
 }

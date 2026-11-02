@@ -96,7 +96,6 @@ export async function fetchLeaderboard() {
     return Array.isArray(data) ? data : [];
   }
   catch (e) {
-    console.error('fetchLeaderboard error:', e);
     return [];
   }
 }

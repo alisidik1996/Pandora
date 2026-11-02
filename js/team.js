@@ -56,7 +56,6 @@ export async function restoreSession() {
       }
     }
   } catch (e) {
-    console.warn('Restore session gagal:', e.message);
     clearToken();
     localStorage.removeItem('pb_last_screen');
     showScreen('screen-intro');
