@@ -218,26 +218,48 @@ const server = http.createServer(async (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  📦  Pandora Box Game — Server Aktif');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`  Komputer  : http://localhost:${PORT}/`);
-  const nets = networkInterfaces();
-  for (const iface of Object.values(nets)) {
-    for (const addr of iface) {
-      if (addr.family === 'IPv4' && !addr.internal)
-        console.log(`  HP/tablet : http://${addr.address}:${PORT}/`);
+// Local development
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('  📦  Pandora Box Game — Server Aktif');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`  Komputer  : http://localhost:${PORT}/`);
+    const nets = networkInterfaces();
+    for (const iface of Object.values(nets)) {
+      for (const addr of iface) {
+        if (addr.family === 'IPv4' && !addr.internal)
+          console.log(`  HP/tablet : http://${addr.address}:${PORT}/`);
+      }
     }
-  }
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  Ctrl+C untuk menghentikan\n');
-});
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('  Ctrl+C untuk menghentikan\n');
+  });
 
-server.on('error', err => {
-  if (err.code === 'EADDRINUSE')
-    console.error(`\n❌  Port ${PORT} sudah dipakai.\n`);
-  else
-    console.error('\n❌  Server error:', err.message);
-  process.exit(1);
-});
+  server.on('error', err => {
+    if (err.code === 'EADDRINUSE')
+      console.error(`\n❌  Port ${PORT} sudah dipakai.\n`);
+    else
+      console.error('\n❌  Server error:', err.message);
+    process.exit(1);
+  });
+}
+
+// ── Vercel Serverless Export ──────────────────────────────────
+export default async (req, res) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'POST') {
+    res.writeHead(405, { Allow: 'GET, HEAD, POST' });
+    res.end();
+    return;
+  }
+
+  if (req.url.startsWith('/api/')) {
+    try { await handleAPI(req, res); }
+    catch (e) {
+      console.error('API error:', e);
+      json(res, 500, { error: 'Internal server error' });
+    }
+  } else {
+    handleStatic(req, res);
+  }
+};
