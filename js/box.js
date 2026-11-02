@@ -6,11 +6,11 @@
  * =============================================================
  */
 
-import { LOCK_DEFS }               from './config.js';
-import { State }                   from './state.js';
+import { LOCK_DEFS } from './config.js';
+import { State } from './state.js';
 import { saveProgress, clearToken } from './api.js';
 import { showScreen, fmtDuration } from './utils.js';
-import { stopMic }                 from './mic.js';
+import { stopMic } from './mic.js';
 
 let boxTimerInterval = null;
 
@@ -22,7 +22,7 @@ export function showBox() {
 }
 
 export function renderBox() {
-  const td     = State.teamData;
+  const td = State.teamData;
   const opened = LOCK_DEFS.filter(l => td.locks[l.id]).length;
 
   document.getElementById('box-progress-fill').style.width = (opened / 6 * 100) + '%';
@@ -34,9 +34,9 @@ export function renderBox() {
   grid.innerHTML = '';
   LOCK_DEFS.forEach(l => {
     const unlocked = td.locks[l.id];
-    const div      = document.createElement('div');
-    div.className  = 'lock-card' + (unlocked ? ' unlocked' : '');
-    div.innerHTML  = `
+    const div = document.createElement('div');
+    div.className = 'lock-card' + (unlocked ? ' unlocked' : '');
+    div.innerHTML = `
       <div class="lock-icon"></div>
       <div class="lock-num">Lock #${l.num}</div>
       <div class="lock-name"></div>
@@ -65,7 +65,7 @@ export async function openLockScreen(lockDef) {
   stopMic();
 
   // Clear msg hanya untuk lock yang belum terbuka
-  ['l1-msg','l2-msg','l3-msg','l4-msg','l5-msg','l6-msg'].forEach(id => {
+  ['l1-msg', 'l2-msg', 'l3-msg', 'l4-msg', 'l5-msg', 'l6-msg'].forEach(id => {
     const lockId = id.replace('-msg', '');
     if (!State.teamData.locks[lockId]) {
       const el = document.getElementById(id);
@@ -75,8 +75,8 @@ export async function openLockScreen(lockDef) {
 
   const badge = document.getElementById(`${lockDef.id}-badge`);
   if (badge) {
-    const open        = State.teamData.locks[lockDef.id];
-    badge.className   = 'badge ' + (open ? 'badge-unlocked' : 'badge-locked');
+    const open = State.teamData.locks[lockDef.id];
+    badge.className = 'badge ' + (open ? 'badge-unlocked' : 'badge-locked');
     badge.textContent = open ? 'Terbuka' : 'Terkunci';
   }
 
@@ -148,7 +148,7 @@ export async function finishGame() {
 }
 
 export function renderFinal() {
-  const td         = State.teamData;
+  const td = State.teamData;
   const orderNames = td.lockOrder.map(id => {
     const def = LOCK_DEFS.find(l => l.id === id);
     return def ? `Lock #${def.num}` : id;
@@ -166,19 +166,19 @@ export function renderFinal() {
 // ── Tim Baru ──────────────────────────────────────────────────
 
 export function confirmNewTeam() {
-  if (!confirm('Yakin mau oper HP ke tim baru? Progress tim ini sudah tersimpan.')) return;
+  if (!confirm('Simpan Sekarang?.')) return;
 
   stopMic();
-  import('./lock6.js').then(m => m.removeMotionListener()).catch(() => {});
+  import('./lock6.js').then(m => m.removeMotionListener()).catch(() => { });
 
   // Hapus token sesi — tim baru harus login ulang
   clearToken();
-  State.teamData      = {};
+  State.teamData = {};
   State.gameStartTime = 0;
 
-  document.getElementById('inp-login-name').value     = '';
+  document.getElementById('inp-login-name').value = '';
   document.getElementById('inp-login-password').value = '';
-  document.getElementById('inp-register-name').value     = '';
+  document.getElementById('inp-register-name').value = '';
   document.getElementById('inp-register-password').value = '';
   ['login-msg', 'register-msg'].forEach(id => {
     const el = document.getElementById(id);
