@@ -3,6 +3,9 @@
  *  MODULE: Panic
  *  Tanggung jawab: Sistem anti-curang Panic Hold.
  *  Global mode: jika 1 tim curang, semua tim kena panic.
+ *
+ *  Approach: Local trigger + increment personal count only.
+ *  Polling detects OTHER teams' panic via global count change.
  * =============================================================
  */
 
@@ -12,13 +15,14 @@ import { PANIC_ENABLED } from './config.js';
 
 const PANIC_DELAY    = 2000; // ms sebelum panic triggered
 const PANIC_DURATION = 15;   // detik countdown
-const POLL_INTERVAL  = 3000; // polling global panic count setiap 3 detik
+const POLL_INTERVAL  = 5000; // polling global panic count setiap 5 detik
 
 let _panicTimeout   = null;
 let _panicCountdown = null;
 let _lastGlobalPanicCount = 0;
 let _pollInterval = null;
 let _panicActive = false; // Flag untuk cegah overlap
+let _sessionStartCount = 0; // Count saat session dimulai
 
 function _isGameActive() {
   return !!State.teamData?.id && !State.teamData?.finished;
@@ -68,17 +72,18 @@ async function _checkGlobalPanic() {
   if (!_isGameActive() || !PANIC_ENABLED) return;
 
   const count = await fetchGlobalPanicCount();
-  console.log('[Panic] Global count:', count, '| Last:', _lastGlobalPanicCount, '| Active:', _panicActive);
 
-  // Jika global count naik DAN panic tidak sedang aktif
-  if (count > _lastGlobalPanicCount && !_panicActive) {
-    console.log('[Panic] Global panic detected! Triggering...');
-    _lastGlobalPanicCount = count;
+  // Detect perubahan relatif terhadap session start
+  const delta = count - _sessionStartCount;
+  const expectedDelta = (State.teamData.panicCount || 0);
+
+  console.log('[Panic] Global:', count, '| Session start:', _sessionStartCount, '| Delta:', delta, '| Expected:', expectedDelta);
+
+  // Jika delta > expected = ada tim lain yang panic
+  if (delta > expectedDelta && !_panicActive) {
+    console.log('[Panic] Other team panic detected! Triggering...');
+    _sessionStartCount = count - (State.teamData.panicCount || 0); // Adjust baseline
     _triggerPanic();
-  } else if (count > _lastGlobalPanicCount && _panicActive) {
-    // Update count tapi skip trigger karena panic masih jalan
-    console.log('[Panic] Count increased but panic already active, updating last count');
-    _lastGlobalPanicCount = count;
   }
 }
 
@@ -88,10 +93,10 @@ export function startPanicPolling() {
 
   console.log('[Panic] Starting global panic polling...');
 
-  // Init last count
+  // Init session baseline
   fetchGlobalPanicCount().then(count => {
-    _lastGlobalPanicCount = count;
-    console.log('[Panic] Initial global count:', count);
+    _sessionStartCount = count - (State.teamData.panicCount || 0);
+    console.log('[Panic] Session baseline:', _sessionStartCount, '| Team count:', State.teamData.panicCount);
   });
 
   _pollInterval = setInterval(_checkGlobalPanic, POLL_INTERVAL);

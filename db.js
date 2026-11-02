@@ -197,10 +197,11 @@ export async function getLeaderboard() {
 }
 
 /**
- * Get global panic count (sum semua tim).
+ * Get total panic events dari semua tim (finished atau belum).
+ * Ini adalah counter global yang terus naik.
  */
 export async function getGlobalPanicCount() {
   await ensureSchema();
-  const rows = await sql`SELECT COALESCE(SUM(panic_count), 0) as total FROM teams WHERE finished = false`;
+  const rows = await sql`SELECT COALESCE(SUM(panic_count), 0) as total FROM teams`;
   return Number(rows[0].total);
 }
