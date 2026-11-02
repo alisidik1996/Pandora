@@ -28,15 +28,22 @@ function _isGameActive() {
   return !!State.teamData?.id && !State.teamData?.finished;
 }
 
-function _triggerPanic() {
+function _triggerPanic(fromGlobalDetection = false) {
   if (!_isGameActive() || !PANIC_ENABLED) return;
   if (_panicActive) return; // Skip jika panic sudah aktif
 
-  console.log('[Panic] Trigger panic! Incrementing count...');
+  console.log('[Panic] Trigger panic! From global:', fromGlobalDetection);
 
   _panicActive = true;
-  State.teamData.panicCount = (State.teamData.panicCount || 0) + 1;
-  saveProgress(State.teamData); // fire-and-forget
+
+  // Hanya increment count jika dari lokal (bukan dari global detection)
+  if (!fromGlobalDetection) {
+    State.teamData.panicCount = (State.teamData.panicCount || 0) + 1;
+    saveProgress(State.teamData); // fire-and-forget
+    console.log('[Panic] Local cheat detected, incrementing count to:', State.teamData.panicCount);
+  } else {
+    console.log('[Panic] Global cheat detected, showing modal without incrementing');
+  }
 
   const modal    = document.getElementById('panic-modal');
   const closeBtn = document.getElementById('panic-close-btn');
@@ -85,7 +92,7 @@ async function _checkGlobalPanic() {
   if (delta > expectedDelta && !_panicActive) {
     console.log('[Panic] Other team panic detected! Triggering...');
     _sessionStartCount = count - (State.teamData.panicCount || 0); // Adjust baseline
-    _triggerPanic();
+    _triggerPanic(true); // Pass true = from global detection
   }
 }
 
