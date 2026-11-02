@@ -1,0 +1,15 @@
+{
+  "name": "pandora-box-game",
+  "version": "1.0.0",
+  "description": "Game riddle tim Pandora Box — kantor, 3 November 2026",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev":   "node --disable-warning=ExperimentalWarning --watch server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "UNLICENSED"
+}

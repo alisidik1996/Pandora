@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Tomb Seeker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div id="app">
+
+    <!-- ===================== SCREEN: INTRO (LOGIN) ============== -->
+    <div id="screen-intro" class="screen active">
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:0;">
+        <h1 class="text-center" style="font-size:clamp(1.8rem,8vw,2.4rem); margin-bottom:20px;">Welcome Seeker's</h1>
+        <div class="card">
+          <div class="flex-row" style="margin-bottom:16px; gap:8px;">
+            <button class="btn btn-secondary" id="btn-toggle-login" style="flex:1;">Login</button>
+            <button class="btn btn-secondary" id="btn-toggle-register" style="flex:1;">Register</button>
+          </div>
+
+          <!-- Form Login -->
+          <div id="form-login" style="display:block;">
+            <label for="inp-login-name">Team</label>
+            <input type="text" id="inp-login-name" placeholder="Team" autocomplete="off" autocorrect="off"
+              spellcheck="false">
+
+            <label for="inp-login-password">Password</label>
+            <input type="password" id="inp-login-password" placeholder="Password" autocomplete="current-password">
+
+            <button class="btn btn-primary" id="btn-team-login">Login</button>
+            <div id="login-msg" class="msg" style="display:none;"></div>
+          </div>
+
+          <!-- Form Register -->
+          <div id="form-register" style="display:none;">
+            <label for="inp-register-name">Team</label>
+            <input type="text" id="inp-register-name" placeholder="Team" autocomplete="off" autocorrect="off"
+              spellcheck="false">
+
+            <label for="inp-register-password">Password</label>
+            <input type="password" id="inp-register-password" placeholder="Password" autocomplete="new-password">
+
+            <button class="btn btn-primary" id="btn-team-register">Register</button>
+            <div id="register-msg" class="msg" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Leaderboard</h3>
+          <div id="leaderboard-list">
+            <p class="text-sm text-dim">Memuat...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================== SCREEN: MENU ====================== -->
+    <div id="screen-menu" class="screen">
+      <h1 class="text-center" style="margin-bottom:10px;">Welcome Seeker's</h1>
+
+      <div id="menu-team-info" class="card text-center" style="padding:12px 16px; margin-bottom:16px;"></div>
+
+      <div class="lock-grid">
+        <div class="lock-card" id="card-pandora">
+          <div class="lock-icon"></div>
+          <div class="lock-num">Pandora</div>
+          <div class="lock-name"></div>
+          <span class="badge badge-unlocked">Buka Kotak</span>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" id="btn-menu-logout">Logout</button>
+    </div>
+
+    <!-- ==================== SCREEN: BOX ======================= -->
+    <div id="screen-box" class="screen">
+      <h1 class="text-center" style="margin-bottom:10px;">Pandora Box</h1>
+
+      <div id="box-team-info" class="card text-center" style="padding:12px 16px; margin-bottom:10px;"></div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="box-progress-fill" style="width:0%"></div>
+      </div>
+      <p class="text-sm text-dim text-center" style="margin-bottom:14px;" id="box-progress-text">0 / 6 terbuka</p>
+
+      <div class="lock-grid" id="lock-grid"></div>
+
+      <button class="btn btn-secondary" id="btn-box-back">← Back</button>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 1 ==================== -->
+    <div id="screen-lock1" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l1-back">← Back</button>
+        <h2>Lock #1</h2>
+        <span id="l1-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <div class="card">
+        <p>Bawa cahaya terang ke tempat gelap yang bisa dijangkau, petunjuk ada di sana.</p>
+      </div>
+
+      <div class="card">
+        <label>PIN (5 digit):</label>
+        <div class="pin-input-group" id="l1-pin-group">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+        </div>
+        <button class="btn btn-primary" id="btn-l1-check">Unlock</button>
+        <div id="l1-msg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 2 ==================== -->
+    <div id="screen-lock2" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l2-back">← Back</button>
+        <h2>Lock #2</h2>
+        <span id="l2-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <div class="card">
+        <p>i'm ONE, scattered into 6 pieces waiting to be found</p>
+      </div>
+
+      <div class="card">
+        <label>Kode (6 digit):</label>
+        <div class="pin-input-group" id="l2-pin-group">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+        </div>
+        <button class="btn btn-primary" id="btn-l2-check">Unlock</button>
+        <div id="l2-msg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 3 ==================== -->
+    <div id="screen-lock3" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l3-back">← Back</button>
+        <h2>Lock #3</h2>
+        <span id="l3-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <!-- Area game Flappy -->
+      <div id="l3-game-area">
+        <div class="card">
+          <p>Burung ini hanya patuh pada suaramu: keras ia naik, hening ia turun. <b>FOCUS & DONT MISS!</b></p>
+        </div>
+
+        <div class="card">
+          <p class="mic-status" id="l3-mic-status">Mic belum diinisialisasi.</p>
+          <div class="flex-row" style="margin-bottom:10px;">
+            <button class="btn btn-secondary" id="btn-l3-calibrate">Kalibrasi</button>
+            <button class="btn btn-secondary" id="btn-l3-start" disabled>Mulai</button>
+          </div>
+          <div class="vol-meter-wrap">
+            <div class="vol-meter-fill" id="l3-vol-fill" style="width:0%"></div>
+            <div class="vol-threshold-line" id="l3-vol-line" style="left:30%"></div>
+          </div>
+          <p class="text-xs text-dim mt-sm" id="l3-threshold-txt">Threshold: belum dikalibrasi</p>
+        </div>
+
+        <div class="flappy-score" id="l3-score">Skor: 0 / 15</div>
+        <canvas id="flappy-canvas" height="260"></canvas>
+        <div id="l3-game-msg" class="msg" style="display:none; margin-top:10px;"></div>
+      </div>
+
+      <!-- Area input PIN setelah 15 pipa -->
+      <div id="l3-pin-area" style="display:none;">
+        <div class="card">
+          <label>PIN (15 digit):</label>
+          <div class="pin-input-group pin-grid-5x3" id="l3-pin-group">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          </div>
+          <button class="btn btn-primary" id="btn-l3-check">Unlock</button>
+          <button class="btn btn-secondary" id="btn-l3-reset">Main Ulang</button>
+          <div id="l3-msg" class="msg" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 4 ==================== -->
+    <div id="screen-lock4" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l4-back">← Back</button>
+        <h2>Lock #4</h2>
+        <span id="l4-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <div class="card">
+        <p>Di tempat paling sunyi, tahan heningmu</p>
+        <p class="text-sm mb-0">Beware your surrounding, or things will revert to how they began</p>
+      </div>
+
+      <div class="card">
+        <button class="btn btn-secondary" id="btn-l4-baseline">Ukur Suara Dasar Ruangan</button>
+        <p class="mic-status" id="l4-baseline-status"></p>
+
+        <button class="btn btn-primary" id="btn-l4-silence" disabled>Mulai Tahan Sunyi 10 Detik</button>
+
+        <div class="vol-meter-wrap">
+          <div class="vol-meter-fill" id="l4-vol-fill" style="width:0%"></div>
+          <div class="vol-threshold-line" id="l4-vol-line" style="left:30%; display:none;"></div>
+        </div>
+        <p class="text-xs text-dim" id="l4-threshold-txt"></p>
+
+        <div class="silence-arc-wrap">
+          <div class="timer-display" id="l4-timer">0.0</div>
+          <p class="text-sm text-dim mb-0">detik sunyi berturut-turut</p>
+        </div>
+        <div id="l4-msg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 5 ==================== -->
+    <div id="screen-lock5" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l5-back">← Back</button>
+        <h2>Lock #5</h2>
+        <span id="l5-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <div class="card">
+        <h3>Perceptron adalah bentuk paling simpel dari Neuron</h3>
+        <pre>didefinisikan perceptron(x1, x2, w1, w2, b):
+    s = w1 * x1 + w2 * x2 + b
+    kembalikan 1 jika s &gt;= 0 atau kembalikan 0</pre>
+        <p class="text-sm mb-0"><strong>Keterangan:</strong> w1 = 1 &nbsp;·&nbsp; w2 = 1 &nbsp;·&nbsp; b = −1,5</p>
+        <hr class="divider">
+        <div id="hint-l5" class="hint-box">
+          Cara baca: x1 dan x2 itu sinyal masuknya, w1 dan w2 itu pengalinya (di sini sama-sama 1), b itu pengurang 1,5,
+          s itu totalnya.
+        </div>
+      </div>
+
+      <div class="card">
+        <p style="margin-bottom:10px;">Lengkapi tabel berikut (isi kolom yang ada tanda <strong>?</strong>):</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>x1</th>
+                <th>x2</th>
+                <th>s</th>
+                <th>hasil</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>0</td>
+                <td>0</td>
+                <td><input type="text" id="p00s" inputmode="decimal" placeholder="?"></td>
+                <td><input type="text" id="p00h" inputmode="numeric" placeholder="?"></td>
+              </tr>
+              <tr>
+                <td>0</td>
+                <td>1</td>
+                <td>−0,5</td>
+                <td><input type="text" id="p01h" inputmode="numeric" placeholder="?"></td>
+              </tr>
+              <tr>
+                <td>1</td>
+                <td>0</td>
+                <td><input type="text" id="p10s" inputmode="decimal" placeholder="?"></td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td>1</td>
+                <td>1</td>
+                <td>0,5</td>
+                <td>1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary" id="btn-l5-check">Cek Jawaban</button>
+        <div id="l5-msg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: LOCK 6 ==================== -->
+    <div id="screen-lock6" class="screen">
+      <div class="top-bar">
+        <button class="btn btn-secondary btn-sm" id="btn-l6-back">← Back</button>
+        <h2>Lock #6</h2>
+        <span id="l6-badge" class="badge badge-locked">Terkunci</span>
+      </div>
+
+      <div class="card">
+        <p>Selangkah lagi untuk DIAM, saatnya 1 orang berkorban masuk ke kotak gelap di luar sana<br><b>JANGAN LUPA
+            BERNAFAS</b></p>
+      </div>
+
+
+      <div class="card" id="l6-motion-area">
+        <button class="btn btn-secondary" id="btn-l6-start-still">Mulai Diam (aktifkan sensor)</button>
+
+        <div id="l6-countdown-area" style="display:none;">
+          <p class="text-sm text-dim text-center">Kalibrasi: tetap diam...</p>
+          <div class="countdown-big" id="l6-countdown">3</div>
+        </div>
+
+        <p class="mic-status" id="l6-motion-status"></p>
+
+        <div id="l6-fallback-area" style="display:none;">
+          <div class="hint-box">
+            Sensor gerak tidak tersedia di HP ini. Mode manual: fasilitator pantau seeker via CAM 2, dan tutup gembok
+            secara manual jika seeker bergerak.
+          </div>
+          <button class="btn btn-secondary" id="btn-l6-manual">Lanjut Tanpa Sensor (Pantauan Fasilitator)</button>
+        </div>
+      </div>
+
+      <div class="card" id="l6-pin-area" style="display:none;">
+        <label>PIN (3 digit):</label>
+        <div class="pin-input-group" id="l6-pin-group">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+          <input type="text" class="pin-digit" maxlength="1" inputmode="numeric">
+        </div>
+        <button class="btn btn-primary" id="btn-l6-check">Unlock</button>
+        <div id="l6-msg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCREEN: FINAL ==================== -->
+    <div id="screen-final" class="screen">
+      <div class="text-center" style="margin-bottom:16px;">
+        <div style="font-size:clamp(3rem,12vw,4.5rem); line-height:1.2;"></div>
+        <h1 style="font-size:clamp(1.5rem,7vw,2rem);">Kotak Terbuka!</h1>
+      </div>
+
+      <div class="card">
+        <p style="font-style:italic; text-align:center; line-height:1.9; color:var(--text-dim);">
+          "di dalam kotak yang gelap itu yang tersisa bukan kutukan, tapi harapan,
+          sama seperti tim yang sudah berani hadapi gelap, ribut, sunyi, hitungan,
+          dan rasa takut, yang tersisa adalah tim yang saling menolong."
+        </p>
+      </div>
+
+      <div class="card" id="final-stats"></div>
+
+      <button class="btn btn-danger" id="btn-new-team">Tim Baru — Oper HP ke Tim Berikutnya</button>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- ==================== PANIC MODAL ==================== -->
+  <div id="panic-modal">
+    <div class="pm-box">
+      <h2>Seseorang mencoba berbuat curang</h2>
+      <p style="margin-bottom:14px;">Game-Master menghukum semua player!</p>
+      <p id="panic-countdown-txt" class="text-sm text-dim" style="margin-bottom:16px;"></p>
+      <button class="btn btn-secondary" id="panic-close-btn" disabled>Tutup</button>
+    </div>
+  </div>
+
+  <!-- Entry point (ES Module) -->
+  <script type="module" src="js/init.js"></script>
+
+</body>
+
+</html>
