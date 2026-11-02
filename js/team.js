@@ -31,6 +31,11 @@ export async function restoreSession() {
     State.teamData      = data.team;
     State.gameStartTime = data.team.startTime;
 
+    // Start panic monitoring
+    if (!data.team.finished) {
+      import('./panic.js').then(m => m.startPanicPolling());
+    }
+
     if (data.team.finished) {
       import('./box.js').then(m => { m.renderFinal(); showScreen('screen-final'); });
     } else {
@@ -128,6 +133,11 @@ export async function handleLogin() {
 
   State.teamData      = result.team;
   State.gameStartTime = result.team.startTime;
+
+  // Start panic monitoring
+  if (!result.team.finished) {
+    import('./panic.js').then(m => m.startPanicPolling());
+  }
 
   showMsg('login-msg', `Selamat datang, ${result.team.name}!`, 'ok');
 

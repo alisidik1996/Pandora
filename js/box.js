@@ -18,7 +18,6 @@ let boxTimerInterval = null;
 // ── Layar Kotak ──────────────────────────────────────────────
 
 export function showBox() {
-  startPanicPolling();
   renderBox();
   showScreen('screen-box');
 }
