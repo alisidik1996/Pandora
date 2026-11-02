@@ -2,18 +2,22 @@
  * =============================================================
  *  MODULE: Panic
  *  Tanggung jawab: Sistem anti-curang Panic Hold.
+ *  Global mode: jika 1 tim curang, semua tim kena panic.
  * =============================================================
  */
 
 import { State }        from './state.js';
-import { saveProgress } from './api.js';
+import { saveProgress, fetchGlobalPanicCount } from './api.js';
 import { PANIC_ENABLED } from './config.js';
 
 const PANIC_DELAY    = 2000; // ms sebelum panic triggered
 const PANIC_DURATION = 15;   // detik countdown
+const POLL_INTERVAL  = 3000; // polling global panic count setiap 3 detik
 
 let _panicTimeout   = null;
 let _panicCountdown = null;
+let _lastGlobalPanicCount = 0;
+let _pollInterval = null;
 
 function _isGameActive() {
   return !!State.teamData?.id && !State.teamData?.finished;
@@ -48,6 +52,38 @@ function _triggerPanic() {
 
 export function closePanic() {
   document.getElementById('panic-modal').classList.remove('show');
+}
+
+// ── Global panic polling ──────────────────────────────────────
+async function _checkGlobalPanic() {
+  if (!_isGameActive() || !PANIC_ENABLED) return;
+
+  const count = await fetchGlobalPanicCount();
+
+  // Jika global count naik, trigger panic di tim ini
+  if (count > _lastGlobalPanicCount) {
+    _lastGlobalPanicCount = count;
+    _triggerPanic();
+  }
+}
+
+// Start polling saat game aktif
+export function startPanicPolling() {
+  if (_pollInterval) return;
+
+  // Init last count
+  fetchGlobalPanicCount().then(count => {
+    _lastGlobalPanicCount = count;
+  });
+
+  _pollInterval = setInterval(_checkGlobalPanic, POLL_INTERVAL);
+}
+
+export function stopPanicPolling() {
+  if (_pollInterval) {
+    clearInterval(_pollInterval);
+    _pollInterval = null;
+  }
 }
 
 // ── Event listeners ───────────────────────────────────────────

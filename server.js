@@ -28,6 +28,7 @@ import {
   saveProgress,
   getProgress,
   getLeaderboard,
+  getGlobalPanicCount,
 } from './db.js';
 
 // ── Konfigurasi ───────────────────────────────────────────────
@@ -170,6 +171,12 @@ async function handleAPI(req, res) {
   // GET /api/leaderboard — publik
   if (url.pathname === '/api/leaderboard' && method === 'GET') {
     return json(res, 200, await getLeaderboard());
+  }
+
+  // GET /api/panic-count — global panic count untuk semua tim aktif
+  if (url.pathname === '/api/panic-count' && method === 'GET') {
+    const count = await getGlobalPanicCount();
+    return json(res, 200, { count });
   }
 
   // GET /api/progress — ambil progress tim (perlu token)

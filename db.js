@@ -195,3 +195,12 @@ export async function getLeaderboard() {
     panicCount: r.panic_count,
   }));
 }
+
+/**
+ * Get global panic count (sum semua tim).
+ */
+export async function getGlobalPanicCount() {
+  await ensureSchema();
+  const rows = await sql`SELECT COALESCE(SUM(panic_count), 0) as total FROM teams WHERE finished = false`;
+  return Number(rows[0].total);
+}

@@ -100,3 +100,17 @@ export async function fetchLeaderboard() {
     return [];
   }
 }
+
+/**
+ * Ambil global panic count dari server.
+ * @returns {Promise<number>}
+ */
+export async function fetchGlobalPanicCount() {
+  try {
+    const data = await _get('/api/panic-count');
+    return data.count || 0;
+  }
+  catch {
+    return 0;
+  }
+}

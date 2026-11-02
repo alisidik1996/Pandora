@@ -11,12 +11,14 @@ import { State } from './state.js';
 import { saveProgress, clearToken } from './api.js';
 import { showScreen, fmtDuration } from './utils.js';
 import { stopMic } from './mic.js';
+import { startPanicPolling, stopPanicPolling } from './panic.js';
 
 let boxTimerInterval = null;
 
 // ── Layar Kotak ──────────────────────────────────────────────
 
 export function showBox() {
+  startPanicPolling(); // Start global panic monitoring
   renderBox();
   showScreen('screen-box');
 }
@@ -140,6 +142,7 @@ export async function finishGame() {
   if (td.finished) { renderFinal(); showScreen('screen-final'); return; }
 
   stopMic();
+  stopPanicPolling(); // Stop polling saat game selesai
   td.finished = true;
   td.duration = Date.now() - td.startTime;
   await saveProgress(td);
